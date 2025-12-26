@@ -4,31 +4,14 @@ import './App.scss';
 import users from './api/users';
 import todosFromServer from './api/todos';
 import { TodoList } from './components/TodoList';
-
-type User = {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-};
-
-type TodoFromServer = {
-  id: number;
-  title: string;
-  completed: boolean;
-  userId: number;
-};
-
-type Todo = TodoFromServer & {
-  user: User;
-};
+import { Todo, User } from './types';
 
 export const App = () => {
-  const preparedTodos: Todo[] = todosFromServer.map(todo => {
-    const user = users.find(u => u.id === todo.userId) as User;
+  const preparedTodos: Todo[] = todosFromServer.map(todoFromServer => {
+    const user = users.find(u => u.id === todoFromServer.userId) as User;
 
     return {
-      ...todo,
+      ...todoFromServer,
       user,
     };
   });
@@ -58,18 +41,19 @@ export const App = () => {
       return;
     }
 
-    const user = users.find(u => u.id === userId) as User;
-    const maxId = todos.length > 0 ? Math.max(...todos.map(t => t.id)) : 0;
+    const selectedUser = users.find(user => user.id === userId) as User;
+    const maxId =
+      todos.length > 0 ? Math.max(...todos.map(todo => todo.id)) : 0;
 
     const newTodo: Todo = {
       id: maxId + 1,
       title: title.trim(),
       completed: false,
       userId,
-      user,
+      user: selectedUser,
     };
 
-    setTodos([...todos, newTodo]);
+    setTodos(currentTodos => [...currentTodos, newTodo]);
     setTitle('');
     setUserId(0);
   };
@@ -86,7 +70,6 @@ export const App = () => {
             placeholder="Enter todo title"
             value={title}
             onChange={event => {
-              // Опционально: разрешены только буквы (en/ua), цифры и пробелы
               const filtered = event.target.value.replace(
                 /[^a-zA-Zа-яА-ЯіІїЇєЄ0-9\s]/g,
                 '',
