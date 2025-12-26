@@ -4,17 +4,24 @@ import './App.scss';
 import users from './api/users';
 import todosFromServer from './api/todos';
 import { TodoList } from './components/TodoList';
-import { Todo, User } from './types';
+import { Todo } from './types';
 
 export const App = () => {
-  const preparedTodos: Todo[] = todosFromServer.map(todoFromServer => {
-    const user = users.find(u => u.id === todoFromServer.userId) as User;
+  // Безопасная подготовка todos: отфильтровываем те, у кого нет пользователя
+  const preparedTodos: Todo[] = todosFromServer
+    .map(todoFromServer => {
+      const foundUser = users.find(user => user.id === todoFromServer.userId);
 
-    return {
-      ...todoFromServer,
-      user,
-    };
-  });
+      if (!foundUser) {
+        return null;
+      }
+
+      return {
+        ...todoFromServer,
+        user: foundUser,
+      };
+    })
+    .filter((todo): todo is Todo => todo !== null);
 
   const [todos, setTodos] = useState<Todo[]>(preparedTodos);
   const [title, setTitle] = useState('');
@@ -41,7 +48,9 @@ export const App = () => {
       return;
     }
 
-    const selectedUser = users.find(user => user.id === userId) as User;
+    // userId гарантированно валиден после проверки
+    const selectedUser = users.find(user => user.id === userId)!;
+
     const maxId =
       todos.length > 0 ? Math.max(...todos.map(todo => todo.id)) : 0;
 
